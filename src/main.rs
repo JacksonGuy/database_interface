@@ -1,8 +1,28 @@
+// use core::fmt;
+use std::fmt;
+
 use mysql::*;
 use mysql::prelude::*;
 
+mod tables;
+mod database;
+mod csv;
+
+#[derive(Debug, PartialEq, Eq)]
+struct Payment {
+    customer_id: i32,
+    amount: i32,
+    account_name: String
+}
+
+impl fmt::Display for Payment {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{} {} {}", self.customer_id, self.amount, self.account_name)
+    }
+}
+
 fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
-    let url = "mysql://root:password@localhost:3307/cobalt_mines";
+    let url = "mysql://root:password@localhost:3306/cobalt_mines";
     let pool = Pool::new(url)?;
 
     let mut conn = pool.get_conn()?;
@@ -23,12 +43,15 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     )?;
 
     // Get Payments
-    let result: Vec<Row> = conn.query(
-        r"SELECT * FROM test"
+    let result = conn.query_map(
+        r"SELECT * FROM test",
+        |(customer_id, amount, account_name)| {
+            Payment { customer_id, amount, account_name }
+        },
     )?;
 
-    for row in result.iter() {
-        println!("{}", row.unwrap());
+    for payment in result {
+        println!("{}", payment);
     }
 
     Ok(())
